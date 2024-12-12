@@ -1,9 +1,55 @@
-use chrono::{DateTime, Utc};
-use std::fmt::{Display, Formatter};
-use Transaction::{Deposit, Withdraw};
 use crate::bank_account::Error::AccountFundCanBePositive;
+use chrono::{DateTime, Utc};
+use std::cmp::PartialOrd;
+use std::fmt::{Display, Formatter};
+use std::ops::{Add, Deref, Sub};
+use Transaction::{Deposit, Withdraw};
 
-type Amount = i64;
+macro_rules! amount {
+    ($amount: expr) => {
+        Amount::new($amount)
+    };
+}
+pub(crate) use amount;
+
+#[derive(Debug, PartialEq)]
+pub struct Amount(i64);
+
+impl Amount {
+    pub fn new(amount: i64) -> Amount {
+        Amount(amount)
+    }
+    pub fn is_negative(&self) -> bool {
+        self.0 < 0
+    }
+}
+
+impl Add<&Amount> for &Amount {
+    type Output = Amount;
+
+    fn add(self, rhs: &Amount) -> Self::Output {
+        Amount(self.0 + rhs.0)
+    }
+}
+
+impl Sub<&Amount> for &Amount {
+    type Output = Amount;
+
+    fn sub(self, rhs: &Amount) -> Self::Output {
+        Amount(self.0 - rhs.0)
+    }
+}
+
+impl Display for Amount {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{number:>width$}",
+            number = &self.0,
+            width = f.width().unwrap_or(0)
+        )
+    }
+}
 
 #[derive(Debug)]
 pub enum Error {
@@ -21,7 +67,6 @@ impl Transaction {
             Withdraw(_, _, balance) => balance,
         }
     }
-
 }
 
 impl Display for Transaction {
@@ -60,7 +105,7 @@ impl BankAccount {
         account_number: String,
         initial_amount: Amount,
     ) -> Result<Self, Error> {
-        if initial_amount < 0 {
+        if initial_amount.is_negative() {
             return Err(AccountFundCanBePositive(initial_amount));
         }
         Ok(Self {
@@ -72,18 +117,21 @@ impl BankAccount {
 
     pub fn deposit(&mut self, amount: Amount) {
         let now = Utc::now();
+        let balance = self.balance() + &amount;
         self.transactions
-            .push(Deposit(now, amount, self.balance() + amount));
+            .push(Deposit(now, amount, balance));
     }
 
     pub fn withdraw(&mut self, amount: Amount) {
         let now = Utc::now();
+        let balance = self.balance() - &amount;
         self.transactions
-            .push(Withdraw(now, amount, self.balance() - amount));
+            .push(Withdraw(now, amount, balance));
     }
 
     pub fn balance(&self) -> &Amount {
-        self.transactions.last()
+        self.transactions
+            .last()
             .map_or(&self.initial_amount, |t| t.balance())
     }
 }
@@ -105,60 +153,71 @@ mod tests {
     #[test]
     fn should_create_new_account() {
         // Given / When
-        let bank_account = BankAccount::create_new_account("account_number".to_string(), 100).unwrap();
+        let bank_account =
+            BankAccount::create_new_account("account_number".to_string(), Amount(100)).unwrap();
 
         // Then
-        assert_eq!(bank_account.initial_amount, 100);
+        assert_eq!(bank_account.initial_amount, Amount(100));
         assert_eq!(bank_account.account_number, "account_number");
     }
 
     #[test]
     fn should_deposit_in_bank_account() {
         // Given
-        let mut bank_account = BankAccount::create_new_account("account_number".to_string(), 100).unwrap();
+        let mut bank_account =
+            BankAccount::create_new_account("account_number".to_string(), Amount(100)).unwrap();
 
         // When
-        bank_account.deposit(50);
+        bank_account.deposit(Amount(50));
 
         // Then
         assert_eq!(bank_account.transactions.len(), 1);
-        assert!(matches!(bank_account.transactions[0], Deposit(_, 50, 150)));
+        assert!(matches!(
+            bank_account.transactions[0],
+            Deposit(_, Amount(50), Amount(150))
+        ));
     }
 
     #[test]
     fn should_withdraw_in_bank_account() {
         // Given
-        let mut bank_account = BankAccount::create_new_account("account_number".to_string(), 100).unwrap();
+        let mut bank_account =
+            BankAccount::create_new_account("account_number".to_string(), Amount(100)).unwrap();
 
         // When
-        bank_account.withdraw(50);
+        bank_account.withdraw(Amount(50));
 
         // Then
         assert_eq!(bank_account.transactions.len(), 1);
-        assert!(matches!(bank_account.transactions[0], Withdraw(_, 50, 50)));
+        assert!(matches!(
+            bank_account.transactions[0],
+            Withdraw(_, Amount(50), Amount(50))
+        ));
     }
 
     #[test]
     fn should_balance_in_bank_account() {
         // Given
-        let mut bank_account = BankAccount::create_new_account("account_number".to_string(), 100).unwrap();
+        let mut bank_account =
+            BankAccount::create_new_account("account_number".to_string(), Amount(100)).unwrap();
 
         // When
-        bank_account.deposit(50);
-        bank_account.withdraw(100);
+        bank_account.deposit(Amount(50));
+        bank_account.withdraw(amount!(100));
 
         // Then
-        assert_eq!(bank_account.balance(), &50);
+        assert_eq!(bank_account.balance(), &Amount(50));
     }
 
     #[test]
     fn should_format_account() {
         // Given
-        let mut bank_account = BankAccount::create_new_account("account_number".to_string(), 100).unwrap();
+        let mut bank_account =
+            BankAccount::create_new_account("account_number".to_string(), Amount(100)).unwrap();
 
         // When
-        bank_account.deposit(50);
-        bank_account.withdraw(100);
+        bank_account.deposit(Amount(50));
+        bank_account.withdraw(amount!(100));
 
         // Then
         let re = Regex::new(
