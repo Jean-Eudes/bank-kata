@@ -2,6 +2,13 @@
 name = "bank_account"
 edition = "2021"
 
+[profile.release]
+strip = true  # Automatically strip symbols from the binary.
+codegen-units = 1
+lto = true
+opt-level = 3 # Optimize for size
+panic = "abort"
+
 [dependencies]
 chrono = "0.4.39"
 
