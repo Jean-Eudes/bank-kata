@@ -3,18 +3,19 @@ use crate::domain::bank_account::Error::AccountFundCanBePositive;
 use chrono::{DateTime, Utc};
 use std::fmt::{Display, Formatter};
 use Transaction::{Deposit, Withdraw};
+use crate::domain::balance::Balance;
 
 #[derive(Debug)]
 pub enum Error {
-    AccountFundCanBePositive(Amount),
+    AccountFundCanBePositive(Balance),
 }
 enum Transaction {
-    Deposit(DateTime<Utc>, Amount, Amount),
-    Withdraw(DateTime<Utc>, Amount, Amount),
+    Deposit(DateTime<Utc>, Amount, Balance),
+    Withdraw(DateTime<Utc>, Amount, Balance),
 }
 
 impl Transaction {
-    fn balance(&self) -> &Amount {
+    fn balance(&self) -> &Balance {
         match self {
             Deposit(_, _, balance) => balance,
             Withdraw(_, _, balance) => balance,
@@ -51,14 +52,14 @@ impl Display for Transaction {
 
 pub struct BankAccount {
     account_number: String,
-    initial_amount: Amount,
+    initial_amount: Balance,
     transactions: Vec<Transaction>,
 }
 
 impl BankAccount {
     pub fn create_new_account(
         account_number: String,
-        initial_amount: Amount,
+        initial_amount: Balance,
     ) -> Result<Self, Error> {
         if initial_amount.is_negative() {
             return Err(AccountFundCanBePositive(initial_amount));
@@ -82,7 +83,7 @@ impl BankAccount {
         self.transactions.push(Withdraw(now, amount, balance));
     }
 
-    pub fn balance(&self) -> &Amount {
+    pub fn balance(&self) -> &Balance {
         self.transactions
             .last()
             .map_or(&self.initial_amount, |t| t.balance())
@@ -105,15 +106,16 @@ mod tests {
     use super::*;
     use crate::domain::amount::amount;
     use regex::Regex;
+    use crate::domain::balance::balance;
 
     #[test]
     fn should_create_new_account() {
         // Given / When
         let bank_account =
-            BankAccount::create_new_account("account_number".to_string(), amount!(100)).unwrap();
+            BankAccount::create_new_account("account_number".to_string(), balance!(100)).unwrap();
 
         // Then
-        assert_eq!(bank_account.initial_amount, amount!(100));
+        assert_eq!(bank_account.initial_amount, balance!(100));
         assert_eq!(bank_account.account_number, "account_number");
     }
 
@@ -121,7 +123,7 @@ mod tests {
     fn should_deposit_in_bank_account() {
         // Given
         let mut bank_account =
-            BankAccount::create_new_account("account_number".to_string(), amount!(100)).unwrap();
+            BankAccount::create_new_account("account_number".to_string(), balance!(100)).unwrap();
 
         // When
         bank_account.deposit(amount!(50));
@@ -129,14 +131,14 @@ mod tests {
         // Then
         assert_eq!(bank_account.transactions.len(), 1);
         assert!(matches!(bank_account.transactions[0], Deposit(_, _, _)));
-        assert_eq!(bank_account.transactions[0].balance(), &amount!(150));
+        assert_eq!(bank_account.transactions[0].balance(), &balance!(150));
     }
 
     #[test]
     fn should_withdraw_in_bank_account() {
         // Given
         let mut bank_account =
-            BankAccount::create_new_account("account_number".to_string(), Amount(100)).unwrap();
+            BankAccount::create_new_account("account_number".to_string(), balance!(100)).unwrap();
 
         // When
         bank_account.withdraw(amount!(50));
@@ -150,21 +152,21 @@ mod tests {
     fn should_balance_in_bank_account() {
         // Given
         let mut bank_account =
-            BankAccount::create_new_account("account_number".to_string(), amount!(100)).unwrap();
+            BankAccount::create_new_account("account_number".to_string(), balance!(100)).unwrap();
 
         // When
         bank_account.deposit(amount!(50));
         bank_account.withdraw(amount!(100));
 
         // Then
-        assert_eq!(bank_account.balance(), &amount!(50));
+        assert_eq!(bank_account.balance(), &balance!(50));
     }
 
     #[test]
     fn should_format_account() {
         // Given
         let mut bank_account =
-            BankAccount::create_new_account("account_number".to_string(), amount!(100)).unwrap();
+            BankAccount::create_new_account("account_number".to_string(), balance!(100)).unwrap();
 
         // When
         bank_account.deposit(amount!(50));

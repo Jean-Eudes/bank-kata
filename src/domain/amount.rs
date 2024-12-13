@@ -1,5 +1,4 @@
 use std::fmt::{Display, Formatter};
-use std::ops::{Add, Sub};
 macro_rules! amount {
     ($amount: expr) => {
         Amount::new($amount)
@@ -17,22 +16,6 @@ impl Amount {
     }
     pub fn is_negative(&self) -> bool {
         self.0 < 0
-    }
-}
-
-impl Add<&Amount> for &Amount {
-    type Output = Amount;
-
-    fn add(self, rhs: &Amount) -> Self::Output {
-        Amount(self.0 + rhs.0)
-    }
-}
-
-impl Sub<&Amount> for &Amount {
-    type Output = Amount;
-
-    fn sub(self, rhs: &Amount) -> Self::Output {
-        Amount(self.0 - rhs.0)
     }
 }
 
