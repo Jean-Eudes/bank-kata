@@ -1,17 +1,17 @@
-use crate::domain::amount::Amount;
+use crate::domain::amount::Balance;
+use crate::domain::amount::PositiveAmount;
 use crate::domain::bank_account::Error::AccountFundCanBePositive;
 use chrono::{DateTime, Utc};
 use std::fmt::{Display, Formatter};
 use Transaction::{Deposit, Withdraw};
-use crate::domain::balance::Balance;
 
 #[derive(Debug)]
 pub enum Error {
     AccountFundCanBePositive(Balance),
 }
 enum Transaction {
-    Deposit(DateTime<Utc>, Amount, Balance),
-    Withdraw(DateTime<Utc>, Amount, Balance),
+    Deposit(DateTime<Utc>, PositiveAmount, Balance),
+    Withdraw(DateTime<Utc>, PositiveAmount, Balance),
 }
 
 impl Transaction {
@@ -71,13 +71,13 @@ impl BankAccount {
         })
     }
 
-    pub fn deposit(&mut self, amount: Amount) {
+    pub fn deposit(&mut self, amount: PositiveAmount) {
         let now = Utc::now();
         let balance = self.balance() + &amount;
         self.transactions.push(Deposit(now, amount, balance));
     }
 
-    pub fn withdraw(&mut self, amount: Amount) {
+    pub fn withdraw(&mut self, amount: PositiveAmount) {
         let now = Utc::now();
         let balance = self.balance() - &amount;
         self.transactions.push(Withdraw(now, amount, balance));
@@ -104,9 +104,8 @@ impl Display for BankAccount {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::amount::amount;
+    use crate::domain::amount::{amount, balance};
     use regex::Regex;
-    use crate::domain::balance::balance;
 
     #[test]
     fn should_create_new_account() {

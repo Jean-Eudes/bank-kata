@@ -37,6 +37,7 @@ name = "bank_account"
 version = "0.0.0"
 dependencies = [
  "chrono",
+ "num-traits",
  "regex",
 ]
 
