@@ -1,7 +1,7 @@
-use num_traits::{PrimInt, Signed};
+use deepsize::DeepSizeOf;
+use num_traits::{AsPrimitive, PrimInt, Signed};
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, Sub};
-use deepsize::DeepSizeOf;
 
 #[macro_export]
 macro_rules! amount {
@@ -20,11 +20,10 @@ macro_rules! balance {
 pub type PositiveAmount = Amount<u64>;
 pub type Balance = Amount<i64>;
 
-#[derive(Debug, PartialEq, Clone)]
-#[derive(DeepSizeOf)]
+#[derive(Debug, PartialEq, Clone, DeepSizeOf)]
 pub struct Amount<T>(T);
 
-impl<T: PrimInt> Amount<T> {
+impl<T> Amount<T> {
     pub fn new(amount: T) -> Amount<T> {
         Amount(amount)
     }
@@ -39,34 +38,27 @@ where
     }
 }
 
-/*impl Add<&PositiveAmount> for &Balance {
-    type Output = Balance;
-
-    fn add(self, rhs: &PositiveAmount) -> Self::Output {
-        let t = self.0 + rhs.0 as i64;
-        Amount(t)
-    }
-}
-*/
-
 impl<T, U> Add<Amount<T>> for Amount<U>
 where
-    T: Add<Output=T> + Copy + Default,
-    U: Add<Output=U> + Copy + TryFrom<T> + Default,
+    T: Copy + AsPrimitive<U>,
+    U: Add<Output = U> + Copy + 'static,
 {
     type Output = Amount<U>;
 
     fn add(self, rhs: Amount<T>) -> Self::Output {
-        let t = self.0 + U::try_from(rhs.0).unwrap_or_else(|_| panic!("pas bien, ne devrait pas arriver"));
+        let t = self.0 + rhs.0.as_();
         Amount(t)
     }
 }
+impl<T, U> Sub<Amount<T>> for Amount<U>
+where
+    T: Copy + AsPrimitive<U>,
+    U: Sub<Output = U> + Copy + 'static,
+{
+    type Output = Amount<U>;
 
-impl Sub<PositiveAmount> for Balance {
-    type Output = Balance;
-
-    fn sub(self, rhs: PositiveAmount) -> Self::Output {
-        let t = self.0 - rhs.0 as i64;
+    fn sub(self, rhs: Amount<T>) -> Self::Output {
+        let t = self.0 - rhs.0.as_();
         Amount(t)
     }
 }
