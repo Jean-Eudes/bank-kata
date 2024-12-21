@@ -73,20 +73,20 @@ impl BankAccount {
 
     pub fn deposit(&mut self, amount: PositiveAmount) {
         let now = Utc::now();
-        let balance = self.balance() + &amount;
+        let balance = self.balance() + amount.clone();
         self.transactions.push(Deposit(now, amount, balance));
     }
 
     pub fn withdraw(&mut self, amount: PositiveAmount) {
         let now = Utc::now();
-        let balance = self.balance() - &amount;
+        let balance = self.balance() - amount.clone();
         self.transactions.push(Withdraw(now, amount, balance));
     }
 
-    pub fn balance(&self) -> &Balance {
+    pub fn balance(&self) -> Balance {
         self.transactions
             .last()
-            .map_or(&self.initial_amount, |t| t.balance())
+            .map_or(self.initial_amount.clone(), |t| t.balance().clone())
     }
 }
 
@@ -158,7 +158,7 @@ mod tests {
         bank_account.withdraw(amount!(100));
 
         // Then
-        assert_eq!(bank_account.balance(), &balance!(50));
+        assert_eq!(bank_account.balance(), balance!(50));
     }
 
     #[test]
