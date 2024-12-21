@@ -93,7 +93,7 @@ impl BankAccount {
 impl Display for BankAccount {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "account number {}", self.account_number)?;
-        writeln!(f, " Date        || credit   || debit     || balance")?;
+        writeln!(f, " Date       || credit    || debit     || balance")?;
         for transaction in &self.transactions {
             writeln!(f, " {transaction}")?;
         }
@@ -104,7 +104,7 @@ impl Display for BankAccount {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::amount::{amount, balance};
+    use crate::{amount, balance};
     use regex::Regex;
 
     #[test]

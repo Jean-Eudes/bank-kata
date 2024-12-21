@@ -1,29 +1,30 @@
-use num_traits::{Signed, ToPrimitive};
-use std::fmt::{Display, Formatter};
+use num_traits::{PrimInt, Signed};
+use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, Sub};
+use deepsize::DeepSizeOf;
 
+#[macro_export]
 macro_rules! amount {
     ($amount: expr) => {
         PositiveAmount::new($amount)
     };
 }
 
-pub(crate) use amount;
+#[macro_export]
 macro_rules! balance {
     ($amount: expr) => {
         Balance::new($amount)
     };
 }
 
-pub(crate) use balance;
-
 pub type PositiveAmount = Amount<u64>;
 pub type Balance = Amount<i64>;
 
 #[derive(Debug, PartialEq)]
-pub struct Amount<T: ToPrimitive>(T);
+#[derive(DeepSizeOf)]
+pub struct Amount<T>(T);
 
-impl<T: ToPrimitive> Amount<T> {
+impl<T: PrimInt> Amount<T> {
     pub fn new(amount: T) -> Amount<T> {
         Amount(amount)
     }
@@ -31,14 +32,14 @@ impl<T: ToPrimitive> Amount<T> {
 
 impl<T> Amount<T>
 where
-    T: Signed + ToPrimitive,
+    T: Signed,
 {
     pub fn is_negative(&self) -> bool {
         self.0.is_negative()
     }
 }
 
-impl Add<&PositiveAmount> for &Balance {
+/*impl Add<&PositiveAmount> for &Balance {
     type Output = Balance;
 
     fn add(self, rhs: &PositiveAmount) -> Self::Output {
@@ -46,6 +47,21 @@ impl Add<&PositiveAmount> for &Balance {
         Amount(t)
     }
 }
+*/
+
+impl<T, U> Add<&Amount<T>> for &Amount<U>
+where
+    T: Add<Output=T> + Copy + Default,
+    U: Add<Output=U> + Copy + TryFrom<T> + Default,
+{
+    type Output = Amount<U>;
+
+    fn add(self, rhs: &Amount<T>) -> Self::Output {
+        let t = self.0 + U::try_from(rhs.0).unwrap_or_else(|_| panic!("pas bien, ne devrait pas arriver"));
+        Amount(t)
+    }
+}
+
 impl Sub<&PositiveAmount> for &Balance {
     type Output = Balance;
 
