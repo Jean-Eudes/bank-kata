@@ -1,5 +1,5 @@
 use deepsize::DeepSizeOf;
-use num_traits::{AsPrimitive, PrimInt, Signed};
+use num_traits::{AsPrimitive, Signed};
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, Sub};
 
@@ -74,5 +74,105 @@ where
             number = &self.0,
             width = f.width().unwrap_or(0)
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_create_positive_amount() {
+        // Given / When
+        let amount = PositiveAmount::new(1000);
+
+        // Then
+        assert_eq!(amount.0, 1000);
+    }
+
+    #[test]
+    fn should_create_balance() {
+        // Given / When
+        let balance = Balance::new(1000);
+
+        // Then
+        assert_eq!(balance.0, 1000);
+    }
+
+    #[test]
+    fn should_add_two_positive_amount() {
+        // Given
+        let amount1 = amount!(500);
+        let amount2 = amount!(6000);
+
+        // When
+        let result = amount1 + amount2;
+
+        // Then
+        assert_eq!(result.0, 6500);
+    }
+
+    #[test]
+    fn should_add_positive_amount_to_balance() {
+        // Given
+        let balance = balance!(1000);
+        let amount = amount!(6000);
+
+        // When
+        let result = balance + amount;
+
+        // Then
+        assert_eq!(result.0, 7000);
+    }
+
+    #[test]
+    fn should_add_balance_to_positive_amount() {
+        // Given
+        let balance = balance!(1000);
+        let amount = amount!(6000);
+
+        // When
+        let result = amount + balance;
+
+        // Then
+        assert_eq!(result.0, 7000);
+    }
+    #[test]
+    fn should_subtract_two_positive_amount() {
+        // Given
+        let amount1 = amount!(6000);
+        let amount2 = amount!(500);
+
+        // When
+        let result = amount1 - amount2;
+
+        // Then
+        assert_eq!(result.0, 5500);
+    }
+
+    #[test]
+    fn should_subtract_positive_amount_to_balance() {
+        // Given
+        let balance = balance!(1000);
+        let amount = amount!(6000);
+
+        // When
+        let result = balance - amount;
+
+        // Then
+        assert_eq!(result.0, -5000);
+    }
+
+    #[test]
+    fn should_subtract_balance_to_positive_amount() {
+        // Given
+        let balance = balance!(1000);
+        let amount = amount!(6000);
+
+        // When
+        let result = amount - balance;
+
+        // Then
+        assert_eq!(result.0, 5000);
     }
 }
